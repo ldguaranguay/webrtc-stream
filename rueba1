@@ -4,6 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Transmisión WebRTC</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        video { width: 100%; max-width: 600px; margin: 20px 0; }
+        button { padding: 10px 20px; font-size: 16px; }
+        input { width: 100%; padding: 10px; font-size: 16px; margin-top: 10px; }
+    </style>
 </head>
 <body>
     <h2>Transmisión de Video en Tiempo Real</h2>
@@ -33,7 +39,7 @@
                 const offer = await peerConnection.createOffer();
                 await peerConnection.setLocalDescription(offer);
 
-                const roomId = Math.random().toString(36).substring(7);
+                const roomId = Math.random().toString(36).substring(2, 15); // Generar un ID de sala aleatorio
                 streamLink.value = `${window.location.origin}/?room=${roomId}`;
 
                 // Aquí normalmente deberíamos enviar la oferta al servidor

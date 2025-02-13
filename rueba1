@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Transmisión WebRTC</title>
+</head>
+<body>
+    <h2>Transmisión de Video en Tiempo Real</h2>
+    <video id="localVideo" autoplay playsinline></video>
+    <button id="startButton">Iniciar Transmisión</button>
+    <p>Comparte este enlace para ver el video:</p>
+    <input type="text" id="streamLink" readonly>
+
+    <script>
+        const startButton = document.getElementById("startButton");
+        const localVideo = document.getElementById("localVideo");
+        const streamLink = document.getElementById("streamLink");
+
+        let peerConnection;
+        let localStream;
+
+        const servers = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+
+        startButton.onclick = async () => {
+            try {
+                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
+                localVideo.srcObject = localStream;
+
+                peerConnection = new RTCPeerConnection(servers);
+                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+
+                const roomId = Math.random().toString(36).substring(7);
+                streamLink.value = `${window.location.origin}/?room=${roomId}`;
+
+                // Aquí normalmente deberíamos enviar la oferta al servidor
+                console.log("Oferta RTC generada:", offer);
+            } catch (error) {
+                console.error("Error al iniciar la transmisión:", error);
+            }
+        };
+    </script>
+</body>
+</html>

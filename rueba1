@@ -1,53 +1,42 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Transmisión WebRTC</title>
-    <style>
-        body { font-family: Arial, sans-serif; }
-        video { width: 100%; max-width: 600px; margin: 20px 0; }
-        button { padding: 10px 20px; font-size: 16px; }
-        input { width: 100%; padding: 10px; font-size: 16px; margin-top: 10px; }
-    </style>
-</head>
-<body>
-    <h2>Transmisión de Video en Tiempo Real</h2>
-    <video id="localVideo" autoplay playsinline></video>
-    <button id="startButton">Iniciar Transmisión</button>
-    <p>Comparte este enlace para ver el video:</p>
-    <input type="text" id="streamLink" readonly>
+// server.js - Servidor en Node.js con Express y WebRTC
 
-    <script>
-        const startButton = document.getElementById("startButton");
-        const localVideo = document.getElementById("localVideo");
-        const streamLink = document.getElementById("streamLink");
+const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
+const { ExpressPeerServer } = require('peer');
+const cors = require('cors');
 
-        let peerConnection;
-        let localStream;
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: '*',
+        methods: ['GET', 'POST']
+    }
+});
 
-        const servers = { iceServers: [{ urls: "stun:stun.l.google.com:19302" }] };
+app.use(cors());
 
-        startButton.onclick = async () => {
-            try {
-                localStream = await navigator.mediaDevices.getUserMedia({ video: true, audio: true });
-                localVideo.srcObject = localStream;
+// Servidor PeerJS para gestionar conexiones WebRTC
+const peerServer = ExpressPeerServer(server, {
+    debug: true
+});
+app.use('/peerjs', peerServer);
 
-                peerConnection = new RTCPeerConnection(servers);
-                localStream.getTracks().forEach(track => peerConnection.addTrack(track, localStream));
+io.on('connection', (socket) => {
+    console.log('Usuario conectado:', socket.id);
 
-                const offer = await peerConnection.createOffer();
-                await peerConnection.setLocalDescription(offer);
+    socket.on('join-room', (roomId, userId) => {
+        socket.join(roomId);
+        socket.to(roomId).emit('user-connected', userId);
+    });
 
-                const roomId = Math.random().toString(36).substring(2, 15); // Generar un ID de sala aleatorio
-                streamLink.value = `${window.location.origin}/?room=${roomId}`;
+    socket.on('disconnect', () => {
+        console.log('Usuario desconectado:', socket.id);
+    });
+});
 
-                // Aquí normalmente deberíamos enviar la oferta al servidor
-                console.log("Oferta RTC generada:", offer);
-            } catch (error) {
-                console.error("Error al iniciar la transmisión:", error);
-            }
-        };
-    </script>
-</body>
-</html>
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+    console.log(`Servidor corriendo en http://localhost:${PORT}`);
+});
